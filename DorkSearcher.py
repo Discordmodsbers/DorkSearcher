@@ -211,10 +211,9 @@ def dictionary():
     for j in search(query):
       print(Fore.GREEN + '{}'.format(j))
       print(Fore.LIGHTYELLOW_EX + "--------------------------------")
-    if args.crawl():
+    if args.crawl:
       print("Starting to crawl!")
-      url = args.crawl()
-      scan_sql_injection(url)
+      scan_sql_injection(j)
     
     
 #Arguments
