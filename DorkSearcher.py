@@ -3,6 +3,10 @@ import time, sys, os
 from colorama import Fore
 import argparse
 import webbrowser
+import requests
+from bs4 import BeautifulSoup as bs
+from urllib.parse import urljoin
+from pprint import pprint
 
 #Slow print for things
 def print_slow(str):
@@ -12,6 +16,13 @@ def print_slow(str):
         time.sleep(0.1)
 
 
+#Crawling needs
+s = requests.Session()
+s.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36"
+
+  
+  
+      
 #For loading screens ofc
 delay = 0.2
 
@@ -65,18 +76,108 @@ def loader():
     print("loadinG..........")
     time.sleep(delay)
     cls()
-    
+
+def get_all_forms(url):
+    """Given a `url`, it returns all forms from the HTML content"""
+    soup = bs(s.get(url).content, "html.parser")
+    return soup.find_all("form")
+
+
+def get_form_details(form):
+    """
+    This function extracts all possible useful information about an HTML `form`
+    """
+    details = {}
+    # get the form action (target url)
+    try:
+        action = form.attrs.get("action").lower()
+    except:
+        action = None
+    # get the form method (POST, GET, etc.)
+    method = form.attrs.get("method", "get").lower()
+    # get all the input details such as type and name
+    inputs = []
+    for input_tag in form.find_all("input"):
+        input_type = input_tag.attrs.get("type", "text")
+        input_name = input_tag.attrs.get("name")
+        input_value = input_tag.attrs.get("value", "")
+        inputs.append({"type": input_type, "name": input_name, "value": input_value})
+    # put everything to the resulting dictionary
+    details["action"] = action
+    details["method"] = method
+    details["inputs"] = inputs
+    return details
+
+
+def is_vulnerable(response):
+    """A simple boolean function that determines whether a page 
+    is SQL Injection vulnerable from its `response`"""
+    errors = {
+        # MySQL
+        "you have an error in your sql syntax;",
+        "warning: mysql",
+        # SQL Server
+        "unclosed quotation mark after the character string",
+        # Oracle
+        "quoted string not properly terminated",
+    }
+    for error in errors:
+        # if you find one of these errors, return True
+        if error in response.content.decode().lower():
+            return True
+    # no error detected
+    return False
+
+
+def scan_sql_injection(url):
+    # test on URL
+    for c in "\"'":
+        # add quote/double quote character to the URL
+        new_url = f"{url}{c}"
+        print("[!] Trying", new_url)
+        # make the HTTP request
+        res = s.get(new_url)
+        if is_vulnerable(res):
+            # SQL Injection detected on the URL itself, 
+            # no need to preceed for extracting forms and submitting them
+            print("[+] SQL Injection vulnerability detected, link:", new_url)
+            return
+    # test on HTML forms
+    forms = get_all_forms(url)
+    print(f"[+] Detected {len(forms)} forms on {url}.")
+    for form in forms:
+        form_details = get_form_details(form)
+        for c in "\"'":
+            # the data body we want to submit
+            data = {}
+            for input_tag in form_details["inputs"]:
+                if input_tag["value"] or input_tag["type"] == "hidden":
+                    # any input form that has some value or hidden,
+                    # just use it in the form body
+                    try:
+                        data[input_tag["name"]] = input_tag["value"] + c
+                    except:
+                        pass
+                elif input_tag["type"] != "submit":
+                    # all others except submit, use some junk data with special character
+                    data[input_tag["name"]] = f"test{c}"
+            # join the url with the action (form request URL)
+            url = urljoin(url, form_details["action"])
+            if form_details["method"] == "post":
+                res = s.post(url, data=data)
+            elif form_details["method"] == "get":
+                res = s.get(url, params=data)
+            # test whether the resulting page is vulnerable
+            if is_vulnerable(res):
+                print("[+] SQL Injection vulnerability detected, link:", url)
+                print("[+] Form:")
+                pprint(form_details)
+                break   
+
+  
 #Text User Interface
 def tui():
   os.system('clear')
-  print("""______           _      _____                     _               
-|  _  \         | |    /  ___|                   | |              
-| | | |___  _ __| | __ \ `--.  ___  __ _ _ __ ___| |__   ___ _ __ 
-| | | / _ \| '__| |/ /  `--. \/ _ \/ _` | '__/ __| '_ \ / _ \ '__|
-| |/ / (_) | |  |   <  /\__/ /  __/ (_| | | | (__| | | |  __/ |   
-|___/ \___/|_|  |_|\_\ \____/ \___|\__,_|_|  \___|_| |_|\___|_|   
-                                                                  
-                                                                  """)
   print("[1] Use dork once\n[2] Use multiple dorks")
   while True:
     option = input("_> ")
@@ -102,25 +203,22 @@ def tui():
           print(Fore.GREEN + "{}".format(j))
           print(Fore.LIGHTYELLOW_EX + "-------------------")
 
+
 #Small and lightweight searcher
 def dictionary():
-  print("""______           _      _____                     _               
-|  _  \         | |    /  ___|                   | |              
-| | | |___  _ __| | __ \ `--.  ___  __ _ _ __ ___| |__   ___ _ __ 
-| | | / _ \| '__| |/ /  `--. \/ _ \/ _` | '__/ __| '_ \ / _ \ '__|
-| |/ / (_) | |  |   <  /\__/ /  __/ (_| | | | (__| | | |  __/ |   
-|___/ \___/|_|  |_|\_\ \____/ \___|\__,_|_|  \___|_| |_|\___|_|   
-                                                                  
-                                                                  """)
   with open('targets.txt', 'r') as s:
     query = s.read()
     for j in search(query):
       print(Fore.GREEN + '{}'.format(j))
       print(Fore.LIGHTYELLOW_EX + "--------------------------------")
-
+    if args.crawl():
+      print("Starting to crawl!")
+      url = args.crawl()
+      scan_sql_injection(url)
+    
+    
 #Arguments
 parser = argparse.ArgumentParser()
-
 #Take from txt
 parser.add_argument('-d', '--dictionary', action='store_true', 
 help="Takes infomation from 'targets.txt' and searches them!")
@@ -129,8 +227,14 @@ help="Takes infomation from 'targets.txt' and searches them!")
 parser.add_argument('-i', '--interact',
 action='store_true',
 help="Runs the tui version of this tool! ")
-args = parser.parse_args()
 
+
+#Crawls website for sqli vulnerbilite
+parser.add_argument('-c', '--crawl',
+action='store_true',
+help='Run the crawler to check for sqli')
+
+args = parser.parse_args()
 #Detect correct args
 if args.dictionary:
     loader()
@@ -139,5 +243,3 @@ if args.dictionary:
 if args.interact:
   loader()
   tui()
-
-
