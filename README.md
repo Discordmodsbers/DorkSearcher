@@ -33,6 +33,8 @@ optional arguments:
 
 2. Occasonally get rate limted by google
 
+3. Some how not reading targets.txt (Newly found so ima patch this right now)
+
 # Updates added.
 
 1. Added a working setup file that lets the user run 'dorksearch' from anywhere
