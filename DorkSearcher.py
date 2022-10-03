@@ -33,7 +33,10 @@ delay = 0.2
 def cls():
   os.system('clear')
 
-#Loading function
+#Updator.
+def update():
+    print_slow("Attempting to update script\n")
+    os.system("rm -r /usr/share/doc/dorksearch && git clone https://github.com/Discordmodsbers/DorkSearcher.git && sudo bash setup.sh")
 
 def ping():
   target = args.ping
@@ -186,7 +189,7 @@ def tui():
           print(Fore.GREEN + '{}'.format(j))
           print(Fore.LIGHTYELLOW_EX + "---------------------")
     elif option =='2':
-      print("This is the exact same as --d because im lazy.")
+      print("This is the exact same as -d because im lazy.")
       file = input("Enter filename _> ")
       print_slow(f"Using {file} to attack")
       with open(file, 'r') as s:
@@ -198,7 +201,7 @@ def tui():
 
 #Small and lightweight searcher
 def dictionary():
-  with open('targets.txt', 'r') as s:
+  with open(args.dictionary, 'r') as s:
     query = s.read()
     for j in search(query):
       print(Fore.GREEN + '{}'.format(j))
@@ -218,10 +221,10 @@ def dictionary():
 #Arguments
 parser = argparse.ArgumentParser()
 #Take from txt
-parser.add_argument('-d', '--dictionary', action='store_true', 
-help="Takes infomation from 'targets.txt' and searches them!")
+parser.add_argument('-d', '--dictionary',
+help="Opens the selected txt file and it will search what is in them ")
 
-#Opens tui version (buggy)
+#Opens tui version
 parser.add_argument('-i', '--interact',
 action='store_true',
 help="Runs the tui version of this tool! ")
@@ -236,7 +239,15 @@ help='Run the crawler to check for sqli')
 parser.add_argument('-p', '--ping',
 help='Pings the select host to see if it is alive')
 
+#Lets the user update the script if its outdated.
+parser.add_argument('-u', '--update',
+action='store_true',
+help='Lets the user (YOU) update this script if you want the latest version')
+
 args = parser.parse_args()
+#Update
+if args.update:
+    update()
 #Detect correct args
 if args.dictionary:
     cls()
